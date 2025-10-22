@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BBS (Hono + Vercel + Supabase)</title>
+    <title>BBS (Hono + Supabase)</title>
     <style>
       body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 12px; }
       header { margin-bottom: 16px; }
@@ -12,18 +12,19 @@
       button { padding: 8px 12px; font-size: 14px; }
       .post { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
       .meta { color: #666; font-size: 12px; }
+      .msg { padding: 8px; background:#fff3cd; border:1px solid #ffe69c; color:#664d03; border-radius:6px; }
     </style>
   </head>
   <body>
     <header>
       <h1>掲示板</h1>
-      <p>Hono + Vercel Edge + Supabase</p>
+      <p>Hono + Vercel + Supabase</p>
     </header>
 
     <form id="post-form">
       <input id="author" name="author" maxlength="32" placeholder="名前（任意）" />
       <textarea id="content" name="content" rows="4" maxlength="500" placeholder="内容（必須）" required></textarea>
-      <button type="submit">投稿</button>
+      <button id="submit" type="submit">投稿</button>
     </form>
 
     <section id="list"></section>
@@ -31,40 +32,73 @@
     <script>
       const elList = document.getElementById('list');
       const form = document.getElementById('post-form');
+      const btn = document.getElementById('submit');
+
+      function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;') }
+      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)) }
+
+      async function safeFetchJson(res){
+        const text = await res.text().catch(()=>"");
+        if (!text) return {};
+        try { return JSON.parse(text) } catch { return { raw: text } }
+      }
+
+      async function fetchJSON(url, opts = {}, timeoutMs = 10000){
+        const controller = new AbortController();
+        const id = setTimeout(()=>controller.abort(), timeoutMs);
+        try{
+          const res = await fetch(url, { ...opts, signal: controller.signal });
+          const data = await safeFetchJson(res);
+          if (!res.ok) {
+            const msg = (data && data.error) || res.statusText || 'Request failed';
+            throw new Error(msg);
+          }
+          return { ok: true, data };
+        }catch(err){
+          const msg = err?.name === 'AbortError' ? 'タイムアウトしました' : (err && err.message) || 'ネットワークエラー';
+          return { ok: false, error: msg };
+        }finally{ clearTimeout(id); }
+      }
 
       async function load() {
         elList.innerHTML = '<p>読み込み中...</p>';
-        const res = await fetch('/api/posts');
-        const data = await res.json();
-        const posts = data.posts || [];
-        if (!posts.length) { elList.innerHTML = '<p>投稿はまだありません</p>'; return; }
-        elList.innerHTML = posts.map(p => {
-          const when = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-          const who = p.author || '名無し';
-          const body = (p.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-          return `<div class="post"><div class="meta">${who} ・ ${when}</div><div>${body}</div></div>`;
-        }).join('');
+        const retries = [0, 500, 1500];
+        for (let i=0; i<retries.length; i++){
+          if (retries[i]) await sleep(retries[i]);
+          const res = await fetchJSON('/api/posts');
+          if (res.ok){
+            const posts = res.data.posts || [];
+            if (!posts.length) { elList.innerHTML = '<p>投稿はまだありません</p>'; return; }
+            elList.innerHTML = posts.map(p => {
+              const when = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+              const who = p.author || '名無し';
+              const body = escapeHtml(p.content);
+              return `<div class="post"><div class="meta">${escapeHtml(who)} ・ ${when}</div><div>${body}</div></div>`;
+            }).join('');
+            return;
+          }
+        }
+        elList.innerHTML = '<p class="msg">読み込みに失敗しました。時間を置いて再度お試しください。</p>';
       }
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const author = (document.getElementById('author')).value;
-        const content = (document.getElementById('content')).value;
-        const res = await fetch('/api/posts', {
+        const author = (document.getElementById('author')).value.trim();
+        const content = (document.getElementById('content')).value.trim();
+        if (!content) { alert('内容は必須です'); return; }
+        btn.disabled = true;
+        const res = await fetchJSON('/api/posts', {
           method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ author, content })
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          alert('投稿に失敗しました: ' + (err.error || res.status));
-          return;
-        }
+        btn.disabled = false;
+        if (!res.ok) { alert('投稿に失敗しました: ' + res.error); return; }
         (document.getElementById('content')).value = '';
         await load();
       });
 
+      window.addEventListener('offline', ()=>{ elList.insertAdjacentHTML('afterbegin','<p class="msg">オフラインです</p>') });
       load();
     </script>
   </body>
   </html>
-

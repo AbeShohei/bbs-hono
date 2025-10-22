@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { CONFIG } from './config'
+import { CONFIG } from './config.js'
 
 type Bindings = {
   SUPABASE_URL: string
@@ -98,29 +98,56 @@ button { padding: 8px 12px; font-size: 14px; }
 <script>
 const elList = document.getElementById('list');
 const form = document.getElementById('post-form');
+const btn = document.querySelector('button[type="submit"]');
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;') }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)) }
+async function safeFetchJson(res){
+  const text = await res.text().catch(()=>"");
+  if (!text) return {};
+  try { return JSON.parse(text) } catch { return { raw: text } }
+}
+async function fetchJSON(url, opts = {}, timeoutMs = 10000){
+  const controller = new AbortController();
+  const id = setTimeout(()=>controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    const data = await safeFetchJson(res);
+    if (!res.ok) { throw new Error((data && data.error) || res.statusText || 'Request failed') }
+    return { ok: true, data };
+  }catch(err){
+    const msg = err?.name === 'AbortError' ? 'Timeout' : (err && err.message) || 'Network error';
+    return { ok: false, error: msg };
+  }finally{ clearTimeout(id) }
+}
 async function load() {
   elList.innerHTML = '<p>Loading...</p>';
-  const res = await fetch('/api/posts');
-  const data = await res.json();
-  const posts = data.posts || [];
-  if (!posts.length) { elList.innerHTML = '<p>No posts yet</p>'; return; }
-  elList.innerHTML = posts.map(p => {
-    const when = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-    const who = p.author || 'Anonymous';
-    const body = (p.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    return '<div class="post"><div class="meta">' + who + ' - ' + when + '</div><div>' + body + '</div></div>';
-  }).join('');
+  const retries=[0,500,1500];
+  for (let i=0;i<retries.length;i++){
+    if (retries[i]) await sleep(retries[i]);
+    const res = await fetchJSON('/api/posts');
+    if (res.ok){
+      const posts = res.data.posts || [];
+      if (!posts.length) { elList.innerHTML = '<p>No posts yet</p>'; return; }
+      elList.innerHTML = posts.map(p => {
+        const when = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+        const who = p.author || 'Anonymous';
+        const body = escapeHtml(p.content);
+        return '<div class="post"><div class="meta">' + escapeHtml(who) + ' - ' + when + '</div><div>' + body + '</div></div>';
+      }).join('');
+      return;
+    }
+  }
+  elList.innerHTML = '<p>Failed to load. Please retry later.</p>';
 }
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const author = (document.getElementById('author')).value;
-  const content = (document.getElementById('content')).value;
-  const res = await fetch('/api/posts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ author, content }) });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    alert('Failed to post: ' + (err.error || res.status));
-    return;
-  }
+  const author = (document.getElementById('author')).value.trim();
+  const content = (document.getElementById('content')).value.trim();
+  if (!content) { alert('Content is required'); return; }
+  if (btn) btn.disabled = true;
+  const res = await fetchJSON('/api/posts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ author, content }) });
+  if (btn) btn.disabled = false;
+  if (!res.ok) { alert('Failed to post: ' + res.error); return; }
   (document.getElementById('content')).value = '';
   await load();
 });
