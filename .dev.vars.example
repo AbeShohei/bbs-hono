@@ -1,0 +1,7 @@
+
+# ローカル開発用。`.dev.vars` をコピーして値を入れてください。
+# 本番は `wrangler secret put` を使用します。
+
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+
