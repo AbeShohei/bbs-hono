@@ -1,0 +1,6 @@
+name = "bbs-hono"
+main = "src/cf-worker.ts"
+compatibility_date = "2024-10-01"
+
+# Use `.dev.vars` for local secrets (not committed)
+
