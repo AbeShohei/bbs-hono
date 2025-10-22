@@ -18,6 +18,13 @@ function getSupabase() {
 // health
 app.get('/healthz', (c) => c.text('ok'))
 
+// diagnostics (does not leak secrets)
+app.get('/_diag/env', (c) => {
+  const hasUrl = Boolean(process.env.SUPABASE_URL)
+  const hasKey = Boolean(process.env.SUPABASE_ANON_KEY)
+  return c.json({ hasUrl, hasKey, runtime: 'edge' })
+})
+
 // validation
 const PostInsert = z.object({
   author: z.string().trim().max(32).optional().or(z.literal('').transform(() => undefined)),
@@ -60,4 +67,3 @@ app.post('/posts', async (c) => {
 })
 
 export default app
-
