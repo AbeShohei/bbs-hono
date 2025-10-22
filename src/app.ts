@@ -1,15 +1,14 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
+import { CONFIG, assertConfig } from './config'
 
 const app = new Hono().basePath('/api')
 
-// Env from Vercel (Edge/Serverless)
+// Static config (no env access)
 function getSupabase() {
-  const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_ANON_KEY
-  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY')
-  return createClient(url, key, {
+  assertConfig()
+  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -17,13 +16,6 @@ function getSupabase() {
 
 // health
 app.get('/healthz', (c) => c.text('ok'))
-
-// diagnostics (does not leak secrets)
-app.get('/_diag/env', (c) => {
-  const hasUrl = Boolean(process.env.SUPABASE_URL)
-  const hasKey = Boolean(process.env.SUPABASE_ANON_KEY)
-  return c.json({ hasUrl, hasKey, runtime: 'edge' })
-})
 
 // validation
 const PostInsert = z.object({

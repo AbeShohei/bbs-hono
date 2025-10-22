@@ -1,0 +1,4 @@
+// Copy to src/config.local.ts and fill values. This file is git-ignored.
+export const SUPABASE_URL = 'https://YOUR.ref.supabase.co'
+export const SUPABASE_ANON_KEY = 'eyJ...'
+

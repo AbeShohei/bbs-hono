@@ -1,22 +1,24 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { CONFIG, assertConfig } from './config'
 
-type Bindings = {
-  SUPABASE_URL: string
-  SUPABASE_ANON_KEY: string
-}
-
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono()
 
 // health
 app.get('/healthz', (c) => c.text('ok'))
 
+// diagnostics for static config (does not leak secrets)
+app.get('/_diag/config', (c) => {
+  const hasUrl = Boolean(CONFIG.SUPABASE_URL)
+  const hasKey = Boolean(CONFIG.SUPABASE_ANON_KEY)
+  return c.json({ hasUrl, hasKey })
+})
+
 // Supabase client per request (Cloudflare Workers bindings)
-function getSupabase(c: import('hono').Context<{ Bindings: Bindings }>): SupabaseClient {
-  const url = c.env.SUPABASE_URL
-  const key = c.env.SUPABASE_ANON_KEY
-  return createClient(url, key, {
+function getSupabase(): SupabaseClient {
+  assertConfig()
+  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -30,7 +32,7 @@ const PostInsert = z.object({
 
 // list
 app.get('/api/posts', async (c) => {
-  const supabase = getSupabase(c)
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('posts')
     .select('*')
@@ -53,7 +55,7 @@ app.post('/api/posts', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400)
   }
   const { author, content } = parsed.data
-  const supabase = getSupabase(c)
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('posts')
     .insert([{ author: author ?? null, content }])

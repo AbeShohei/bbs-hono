@@ -1854,10 +1854,10 @@ var require_cjs = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-GZfpgh/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-Z7dbuT/middleware-loader.entry.ts
 init_modules_watch_stub();
 
-// .wrangler/tmp/bundle-GZfpgh/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-Z7dbuT/middleware-insertion-facade.js
 init_modules_watch_stub();
 
 // src/cf-worker.ts
@@ -22993,12 +22993,12 @@ function deepMerge(...sources) {
   return result;
 }
 __name(deepMerge, "deepMerge");
-function mergeCredentialCreationOptions(baseOptions, overrides) {
-  return deepMerge(DEFAULT_CREATION_OPTIONS, baseOptions, overrides || {});
+function mergeCredentialCreationOptions(baseOptions, overrides2) {
+  return deepMerge(DEFAULT_CREATION_OPTIONS, baseOptions, overrides2 || {});
 }
 __name(mergeCredentialCreationOptions, "mergeCredentialCreationOptions");
-function mergeCredentialRequestOptions(baseOptions, overrides) {
-  return deepMerge(DEFAULT_REQUEST_OPTIONS, baseOptions, overrides || {});
+function mergeCredentialRequestOptions(baseOptions, overrides2) {
+  return deepMerge(DEFAULT_REQUEST_OPTIONS, baseOptions, overrides2 || {});
 }
 __name(mergeCredentialRequestOptions, "mergeCredentialRequestOptions");
 var WebAuthnApi = class {
@@ -23039,7 +23039,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-credential-creation W3C WebAuthn Spec - Credential Creation}
    * @see {@link https://w3c.github.io/webauthn/#sctn-verifying-assertion W3C WebAuthn Spec - Verifying Assertion}
    */
-  async _challenge({ factorId, webauthn, friendlyName, signal }, overrides) {
+  async _challenge({ factorId, webauthn, friendlyName, signal }, overrides2) {
     try {
       const { data: challengeResponse, error: challengeError } = await this.client.mfa.challenge({
         factorId,
@@ -23060,7 +23060,7 @@ var WebAuthnApi = class {
       }
       switch (challengeResponse.webauthn.type) {
         case "create": {
-          const options = mergeCredentialCreationOptions(challengeResponse.webauthn.credential_options.publicKey, overrides === null || overrides === void 0 ? void 0 : overrides.create);
+          const options = mergeCredentialCreationOptions(challengeResponse.webauthn.credential_options.publicKey, overrides2 === null || overrides2 === void 0 ? void 0 : overrides2.create);
           const { data, error: error46 } = await createCredential({
             publicKey: options,
             signal: abortSignal
@@ -23081,7 +23081,7 @@ var WebAuthnApi = class {
           return { data: null, error: error46 };
         }
         case "request": {
-          const options = mergeCredentialRequestOptions(challengeResponse.webauthn.credential_options.publicKey, overrides === null || overrides === void 0 ? void 0 : overrides.request);
+          const options = mergeCredentialRequestOptions(challengeResponse.webauthn.credential_options.publicKey, overrides2 === null || overrides2 === void 0 ? void 0 : overrides2.request);
           const { data, error: error46 } = await getCredential(Object.assign(Object.assign({}, challengeResponse.webauthn.credential_options), { publicKey: options, signal: abortSignal }));
           if (data) {
             return {
@@ -23144,7 +23144,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-authentication W3C WebAuthn Spec - Authentication Ceremony}
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialRequestOptions MDN - PublicKeyCredentialRequestOptions}
    */
-  async _authenticate({ factorId, webauthn: { rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal } }, overrides) {
+  async _authenticate({ factorId, webauthn: { rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal } }, overrides2) {
     if (!rpId) {
       return {
         data: null,
@@ -23162,7 +23162,7 @@ var WebAuthnApi = class {
         factorId,
         webauthn: { rpId, rpOrigins },
         signal
-      }, { request: overrides });
+      }, { request: overrides2 });
       if (!challengeResponse) {
         return { data: null, error: challengeError };
       }
@@ -23202,7 +23202,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registration Ceremony}
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialCreationOptions MDN - PublicKeyCredentialCreationOptions}
    */
-  async _register({ friendlyName, rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal }, overrides) {
+  async _register({ friendlyName, rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal }, overrides2) {
     if (!rpId) {
       return {
         data: null,
@@ -23232,7 +23232,7 @@ var WebAuthnApi = class {
         webauthn: { rpId, rpOrigins },
         signal
       }, {
-        create: overrides
+        create: overrides2
       });
       if (!challengeResponse) {
         return { data: null, error: challengeError };
@@ -25786,13 +25786,37 @@ if (shouldShowDeprecationWarning()) {
   console.warn(`\u26A0\uFE0F  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217`);
 }
 
+// src/config.ts
+init_modules_watch_stub();
+var SUPABASE_URL = "";
+var SUPABASE_ANON_KEY = "";
+var overrides = {};
+try {
+  overrides = await import("./config.local");
+} catch {
+}
+var CONFIG = {
+  SUPABASE_URL: overrides.SUPABASE_URL ?? SUPABASE_URL,
+  SUPABASE_ANON_KEY: overrides.SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY
+};
+function assertConfig() {
+  if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY in src/config.ts (or config.local.ts)");
+  }
+}
+__name(assertConfig, "assertConfig");
+
 // src/cf-worker.ts
 var app = new Hono2();
 app.get("/healthz", (c) => c.text("ok"));
-function getSupabase(c) {
-  const url2 = c.env.SUPABASE_URL;
-  const key = c.env.SUPABASE_ANON_KEY;
-  return createClient(url2, key, {
+app.get("/_diag/config", (c) => {
+  const hasUrl = Boolean(CONFIG.SUPABASE_URL);
+  const hasKey = Boolean(CONFIG.SUPABASE_ANON_KEY);
+  return c.json({ hasUrl, hasKey });
+});
+function getSupabase() {
+  assertConfig();
+  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false }
   });
@@ -25803,7 +25827,7 @@ var PostInsert = external_exports.object({
   content: external_exports.string().trim().min(1).max(500)
 });
 app.get("/api/posts", async (c) => {
-  const supabase = getSupabase(c);
+  const supabase = getSupabase();
   const { data, error: error46 } = await supabase.from("posts").select("*").order("created_at", { ascending: false }).limit(50);
   if (error46) return c.json({ error: error46.message }, 500);
   return c.json({ posts: data ?? [] });
@@ -25820,7 +25844,7 @@ app.post("/api/posts", async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.flatten() }, 400);
   }
   const { author, content } = parsed.data;
-  const supabase = getSupabase(c);
+  const supabase = getSupabase();
   const { data, error: error46 } = await supabase.from("posts").insert([{ author: author ?? null, content }]).select().single();
   if (error46) return c.json({ error: error46.message }, 500);
   return c.json({ post: data }, 201);
@@ -25924,7 +25948,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-GZfpgh/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-Z7dbuT/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -25957,7 +25981,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-GZfpgh/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-Z7dbuT/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
