@@ -1854,10 +1854,10 @@ var require_cjs = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-8ltRji/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-HrAiAg/middleware-loader.entry.ts
 init_modules_watch_stub();
 
-// .wrangler/tmp/bundle-8ltRji/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-HrAiAg/middleware-insertion-facade.js
 init_modules_watch_stub();
 
 // src/cf-worker.ts
@@ -25799,12 +25799,6 @@ var CONFIG = {
   SUPABASE_URL: overrides.SUPABASE_URL ?? SUPABASE_URL,
   SUPABASE_ANON_KEY: overrides.SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY
 };
-function assertConfig() {
-  if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY in src/config.ts (or config.local.ts)");
-  }
-}
-__name(assertConfig, "assertConfig");
 
 // src/cf-worker.ts
 var app = new Hono2();
@@ -25814,9 +25808,13 @@ app.get("/_diag/config", (c) => {
   const hasKey = Boolean(CONFIG.SUPABASE_ANON_KEY);
   return c.json({ hasUrl, hasKey });
 });
-function getSupabase() {
-  assertConfig();
-  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+function getSupabase(c) {
+  const url2 = c.env?.SUPABASE_URL ?? CONFIG.SUPABASE_URL;
+  const key = c.env?.SUPABASE_ANON_KEY ?? CONFIG.SUPABASE_ANON_KEY;
+  if (!url2 || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY (env or config.ts)");
+  }
+  return createClient(url2, key, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false }
   });
@@ -25827,7 +25825,7 @@ var PostInsert = external_exports.object({
   content: external_exports.string().trim().min(1).max(500)
 });
 app.get("/api/posts", async (c) => {
-  const supabase = getSupabase();
+  const supabase = getSupabase(c);
   const { data, error: error46 } = await supabase.from("posts").select("*").order("created_at", { ascending: false }).limit(50);
   if (error46) return c.json({ error: error46.message }, 500);
   return c.json({ posts: data ?? [] });
@@ -25844,7 +25842,7 @@ app.post("/api/posts", async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.flatten() }, 400);
   }
   const { author, content } = parsed.data;
-  const supabase = getSupabase();
+  const supabase = getSupabase(c);
   const { data, error: error46 } = await supabase.from("posts").insert([{ author: author ?? null, content }]).select().single();
   if (error46) return c.json({ error: error46.message }, 500);
   return c.json({ post: data }, 201);
@@ -25948,7 +25946,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-8ltRji/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-HrAiAg/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -25981,7 +25979,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-8ltRji/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-HrAiAg/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

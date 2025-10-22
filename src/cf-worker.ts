@@ -1,9 +1,14 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { CONFIG, assertConfig } from './config'
+import { CONFIG } from './config'
 
-const app = new Hono()
+type Bindings = {
+  SUPABASE_URL: string
+  SUPABASE_ANON_KEY: string
+}
+
+const app = new Hono<{ Bindings: Bindings }>()
 
 // health
 app.get('/healthz', (c) => c.text('ok'))
@@ -16,9 +21,13 @@ app.get('/_diag/config', (c) => {
 })
 
 // Supabase client per request (Cloudflare Workers bindings)
-function getSupabase(): SupabaseClient {
-  assertConfig()
-  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+function getSupabase(c: import('hono').Context<{ Bindings: Bindings }>): SupabaseClient {
+  const url = c.env?.SUPABASE_URL ?? CONFIG.SUPABASE_URL
+  const key = c.env?.SUPABASE_ANON_KEY ?? CONFIG.SUPABASE_ANON_KEY
+  if (!url || !key) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY (env or config.ts)')
+  }
+  return createClient(url, key, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -32,7 +41,7 @@ const PostInsert = z.object({
 
 // list
 app.get('/api/posts', async (c) => {
-  const supabase = getSupabase()
+  const supabase = getSupabase(c)
   const { data, error } = await supabase
     .from('posts')
     .select('*')
@@ -55,7 +64,7 @@ app.post('/api/posts', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400)
   }
   const { author, content } = parsed.data
-  const supabase = getSupabase()
+  const supabase = getSupabase(c)
   const { data, error } = await supabase
     .from('posts')
     .insert([{ author: author ?? null, content }])
