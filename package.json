@@ -4,10 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "wrangler dev",
-    "dev:vercel": "vercel dev",
-    "deploy": "wrangler deploy",
-    "deploy:vercel": "vercel --prod",
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
     "lint": "biome lint .",
     "fmt": "biome format --write .",
     "typecheck": "tsc --noEmit"

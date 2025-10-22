@@ -1,7 +1,0 @@
-name = "bbs-hono"
-main = "src/index.ts"
-compatibility_date = "2024-10-01"
-
-# 本番のシークレットは `wrangler secret` を使用します。
-# ローカル開発では `.dev.vars` を使用できます。
-
