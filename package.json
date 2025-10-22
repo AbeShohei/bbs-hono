@@ -19,7 +19,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
     "hono": "^4.10.2",
-    "@hono/vercel": "^0.2.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
