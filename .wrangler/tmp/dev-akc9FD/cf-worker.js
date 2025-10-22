@@ -22993,12 +22993,12 @@ function deepMerge(...sources) {
   return result;
 }
 __name(deepMerge, "deepMerge");
-function mergeCredentialCreationOptions(baseOptions, overrides2) {
-  return deepMerge(DEFAULT_CREATION_OPTIONS, baseOptions, overrides2 || {});
+function mergeCredentialCreationOptions(baseOptions, overrides) {
+  return deepMerge(DEFAULT_CREATION_OPTIONS, baseOptions, overrides || {});
 }
 __name(mergeCredentialCreationOptions, "mergeCredentialCreationOptions");
-function mergeCredentialRequestOptions(baseOptions, overrides2) {
-  return deepMerge(DEFAULT_REQUEST_OPTIONS, baseOptions, overrides2 || {});
+function mergeCredentialRequestOptions(baseOptions, overrides) {
+  return deepMerge(DEFAULT_REQUEST_OPTIONS, baseOptions, overrides || {});
 }
 __name(mergeCredentialRequestOptions, "mergeCredentialRequestOptions");
 var WebAuthnApi = class {
@@ -23039,7 +23039,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-credential-creation W3C WebAuthn Spec - Credential Creation}
    * @see {@link https://w3c.github.io/webauthn/#sctn-verifying-assertion W3C WebAuthn Spec - Verifying Assertion}
    */
-  async _challenge({ factorId, webauthn, friendlyName, signal }, overrides2) {
+  async _challenge({ factorId, webauthn, friendlyName, signal }, overrides) {
     try {
       const { data: challengeResponse, error: challengeError } = await this.client.mfa.challenge({
         factorId,
@@ -23060,7 +23060,7 @@ var WebAuthnApi = class {
       }
       switch (challengeResponse.webauthn.type) {
         case "create": {
-          const options = mergeCredentialCreationOptions(challengeResponse.webauthn.credential_options.publicKey, overrides2 === null || overrides2 === void 0 ? void 0 : overrides2.create);
+          const options = mergeCredentialCreationOptions(challengeResponse.webauthn.credential_options.publicKey, overrides === null || overrides === void 0 ? void 0 : overrides.create);
           const { data, error: error46 } = await createCredential({
             publicKey: options,
             signal: abortSignal
@@ -23081,7 +23081,7 @@ var WebAuthnApi = class {
           return { data: null, error: error46 };
         }
         case "request": {
-          const options = mergeCredentialRequestOptions(challengeResponse.webauthn.credential_options.publicKey, overrides2 === null || overrides2 === void 0 ? void 0 : overrides2.request);
+          const options = mergeCredentialRequestOptions(challengeResponse.webauthn.credential_options.publicKey, overrides === null || overrides === void 0 ? void 0 : overrides.request);
           const { data, error: error46 } = await getCredential(Object.assign(Object.assign({}, challengeResponse.webauthn.credential_options), { publicKey: options, signal: abortSignal }));
           if (data) {
             return {
@@ -23144,7 +23144,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-authentication W3C WebAuthn Spec - Authentication Ceremony}
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialRequestOptions MDN - PublicKeyCredentialRequestOptions}
    */
-  async _authenticate({ factorId, webauthn: { rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal } }, overrides2) {
+  async _authenticate({ factorId, webauthn: { rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal } }, overrides) {
     if (!rpId) {
       return {
         data: null,
@@ -23162,7 +23162,7 @@ var WebAuthnApi = class {
         factorId,
         webauthn: { rpId, rpOrigins },
         signal
-      }, { request: overrides2 });
+      }, { request: overrides });
       if (!challengeResponse) {
         return { data: null, error: challengeError };
       }
@@ -23202,7 +23202,7 @@ var WebAuthnApi = class {
    * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registration Ceremony}
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialCreationOptions MDN - PublicKeyCredentialCreationOptions}
    */
-  async _register({ friendlyName, rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal }, overrides2) {
+  async _register({ friendlyName, rpId = typeof window !== "undefined" ? window.location.hostname : void 0, rpOrigins = typeof window !== "undefined" ? [window.location.origin] : void 0, signal }, overrides) {
     if (!rpId) {
       return {
         data: null,
@@ -23232,7 +23232,7 @@ var WebAuthnApi = class {
         webauthn: { rpId, rpOrigins },
         signal
       }, {
-        create: overrides2
+        create: overrides
       });
       if (!challengeResponse) {
         return { data: null, error: challengeError };
@@ -25790,14 +25790,9 @@ if (shouldShowDeprecationWarning()) {
 init_modules_watch_stub();
 var SUPABASE_URL = "";
 var SUPABASE_ANON_KEY = "";
-var overrides = {};
-try {
-  overrides = await import("./config.local");
-} catch {
-}
 var CONFIG = {
-  SUPABASE_URL: overrides.SUPABASE_URL ?? SUPABASE_URL,
-  SUPABASE_ANON_KEY: overrides.SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 };
 
 // src/cf-worker.ts

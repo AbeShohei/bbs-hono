@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "wrangler dev",
-    "dev:cf": "wrangler dev",
+    "dev:api": "wrangler dev",
+    "dev:web": "vite",
     "dev:node": "tsx dev.ts",
+    "build": "vite build",
+    "preview": "vite preview",
     "deploy": "npx vercel --prod",
     "lint": "biome lint .",
     "fmt": "biome format --write .",
@@ -26,6 +29,7 @@
     "@hono/node-server": "^1.13.8",
     "dotenv": "^16.4.5",
     "biome": "^0.3.3",
+    "vite": "^5.4.10",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "wrangler": "^4.44.0"
