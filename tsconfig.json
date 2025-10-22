@@ -10,6 +10,6 @@
     "resolveJsonModule": true,
     "allowJs": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "api/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
