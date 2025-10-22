@@ -1,14 +1,30 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
-import { CONFIG, assertConfig } from './config'
+import { CONFIG } from './config'
 
 const app = new Hono().basePath('/api')
 
-// Static config (no env access)
+// Prefer env on Vercel (Node runtime). Fallback to CONFIG constants.
 function getSupabase() {
-  assertConfig()
-  return createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+  const env = (typeof process !== 'undefined' ? process.env ?? {} : {}) as Record<string, string | undefined>
+  const url = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || CONFIG.SUPABASE_URL
+  const key = env.SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || CONFIG.SUPABASE_ANON_KEY
+  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY (env or config.ts)')
+  return createClient(url, key, {
+    global: { fetch },
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
+// Server-only client using Service Role key (never expose to client).
+// Use for admin/maintenance endpoints guarded by auth.
+function getSupabaseService() {
+  const env = (typeof process !== 'undefined' ? process.env ?? {} : {}) as Record<string, string | undefined>
+  const url = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || CONFIG.SUPABASE_URL
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY // no NEXT_PUBLIC variant by design
+  if (!url || !serviceKey) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY for service client')
+  return createClient(url, serviceKey, {
     global: { fetch },
     auth: { persistSession: false, autoRefreshToken: false },
   })
